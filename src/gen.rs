@@ -1291,17 +1291,25 @@ fn gen_bitfield_method(ctx: &mut GenCtx, bindgen_name: &String,
 }
 
 fn gen_fullbitfield_method(ctx: &mut GenCtx, bindgen_name: &String,
-                           field_type: &Type, bitfields: &Vec<(String, u32)>) -> ast::ImplItem {
+                           field_type: &Type, bitfields: &[(String, u32)]) -> ast::ImplItem {
     let field_type = cty_to_rs(ctx, field_type, false);
     let mut args = vec!();
+    let mut unnamed: usize = 0;
     for &(ref name, width) in bitfields.iter() {
+        let ident = if name.is_empty() {
+            unnamed += 1;
+            let dummy = format!("unnamed_bitfield{}", unnamed);
+            ctx.ext_cx.ident_of(&dummy)
+        } else {
+            ctx.ext_cx.ident_of(name)
+        };
         args.push(ast::Arg {
             ty: P(type_for_bitfield_width(ctx, width)),
             pat: P(ast::Pat {
                 id: ast::DUMMY_NODE_ID,
                 node: ast::PatIdent(
                     ast::BindingMode::ByValue(ast::MutImmutable),
-                    respan(ctx.span, ctx.ext_cx.ident_of(name)),
+                    respan(ctx.span, ident),
                     None
                 ),
                 span: ctx.span
@@ -1320,8 +1328,15 @@ fn gen_fullbitfield_method(ctx: &mut GenCtx, bindgen_name: &String,
 
     let mut offset = 0;
     let mut exprs = quote_expr!(&ctx.ext_cx, 0);
+    let mut unnamed: usize = 0;
     for &(ref name, width) in bitfields.iter() {
-        let name_ident = ctx.ext_cx.ident_of(&name);
+        let name_ident = if name.is_empty() {
+            unnamed += 1;
+            let dummy = format!("unnamed_bitfield{}", unnamed);
+            ctx.ext_cx.ident_of(&dummy)
+        } else {
+            ctx.ext_cx.ident_of(name)
+        };
         exprs = quote_expr!(&ctx.ext_cx,
             $exprs | (($name_ident as $field_type) << $offset)
         );

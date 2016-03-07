@@ -38,7 +38,7 @@ pub fn assert_bind_eq(filename: &str, reference_items_str: &str)
 
     let mut parser = parse::new_parser_from_source_str(ext_cx.parse_sess(), ext_cx.cfg(), "".to_string(), reference_items_str.to_string());
     let mut reference_items = Vec::new();
-    while let Some(item) = parser.parse_item() {
+    while let Ok(Some(item)) = parser.parse_item() {
         reference_items.push(item);
     }
 
@@ -47,7 +47,7 @@ pub fn assert_bind_eq(filename: &str, reference_items_str: &str)
     // rendered versions, which is not beautiful, but should work.
     let reference_rendered = render_items(&reference_items);
     let generated_rendered = render_items(&generated_items);
-    
+
     if reference_rendered != generated_rendered {
         println!("Generated bindings for {} do not match the reference bindings.", filename);
         println!("");
